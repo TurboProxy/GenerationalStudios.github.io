@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>James' Control Center</title>
+    <style>
+        .jc-container {
+            position: fixed;
+            z-index: 9999;
+            left: 20px;
+            top: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .jc-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .jc-panel {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 100%;
+            width: 260px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        .jc-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .jc-header span {
+            font-weight: bold;
+        }
+        .jc-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .jc-control-info {
+            flex: 1;
+        }
+        .jc-control-name {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .jc-control-desc {
+            font-size: 12px;
+            color: #666;
+        }
+        .jc-toggle {
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            background: white;
+            color: black;
+        }
+        .jc-toggle.on {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        .jc-footer {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="jc-container">
+        <button class="jc-button" id="toggleButton">🔒</button>
+        <div class="jc-panel" id="controlPanel">
+            <div class="jc-header">
+                <span>Control Center</span>
+            </div>
+            
+            <div class="jc-control">
+                <div class="jc-control-info">
+                    <div class="jc-control-name">Ad Block</div>
+                    <div class="jc-control-desc">Block ads on this page</div>
+                </div>
+                <button class="jc-toggle" id="adBlockToggle">OFF</button>
+            </div>
+            
+            <div class="jc-control">
+                <div class="jc-control-info">
+                    <div class="jc-control-name">Disable Extensions</div>
+                    <div class="jc-control-desc">Block extension scripts</div>
+                </div>
+                <button class="jc-toggle" id="extensionsToggle">OFF</button>
+            </div>
+            
+            <div class="jc-control">
+                <div class="jc-control-info">
+                    <div class="jc-control-name">Prevent Inspect</div>
+                    <div class="jc-control-desc">Disable dev tools</div>
+                </div>
+                <button class="jc-toggle" id="inspectToggle">OFF</button>
+            </div>
+            
+            <div class="jc-footer">
+                Drag the lock icon to move
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State variables
+        let adBlockEnabled = false;
+        let extensionsDisabled = false;
+        let inspectPrevented = false;
+        let isDragging = false;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        // DOM elements
+        const container = document.querySelector('.jc-container');
+        const toggleButton = document.getElementById('toggleButton');
+        const controlPanel = document.getElementById('controlPanel');
+        const adBlockToggle = document.getElementById('adBlockToggle');
+        const extensionsToggle = document.getElementById('extensionsToggle');
+        const inspectToggle = document.getElementById('inspectToggle');
+
+        // Toggle panel visibility
+        toggleButton.addEventListener('click', function(e) {
+            if (!isDragging) {
+                controlPanel.style.display = controlPanel.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+
+        // Toggle ad blocking
+        adBlockToggle.addEventListener('click', function() {
+            adBlockEnabled = !adBlockEnabled;
+            this.textContent = adBlockEnabled ? 'ON' : 'OFF';
+            this.classList.toggle('on', adBlockEnabled);
+            console.log('Ad blocking:', adBlockEnabled ? 'enabled' : 'disabled');
+        });
+
+        // Toggle extensions
+        extensionsToggle.addEventListener('click', function() {
+            extensionsDisabled = !extensionsDisabled;
+            this.textContent = extensionsDisabled ? 'ON' : 'OFF';
+            this.classList.toggle('on', extensionsDisabled);
+            console.log('Extensions:', extensionsDisabled ? 'disabled' : 'enabled');
+        });
+
+        // Toggle inspect element prevention
+        inspectToggle.addEventListener('click', function() {
+            inspectPrevented = !inspectPrevented;
+            this.textContent = inspectPrevented ? 'ON' : 'OFF';
+            this.classList.toggle('on', inspectPrevented);
+            
+            if (inspectPrevented) {
+                document.addEventListener('contextmenu', preventDefault);
+                document.addEventListener('keydown', blockDevTools);
+            } else {
+                document.removeEventListener('contextmenu', preventDefault);
+                document.removeEventListener('keydown', blockDevTools);
+            }
+            console.log('Inspect element:', inspectPrevented ? 'prevented' : 'allowed');
+        });
+
+        // Event prevention functions
+        function preventDefault(e) {
+            e.preventDefault();
+            return false;
+        }
+
+        function blockDevTools(e) {
+            if (e.keyCode === 123 || // F12
+                (e.ctrlKey && e.shiftKey && e.keyCode === 73) || // Ctrl+Shift+I
+                (e.ctrlKey && e.shiftKey && e.keyCode === 74) || // Ctrl+Shift+J
+                (e.ctrlKey && e.keyCode === 85)) { // Ctrl+U
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        // Drag functionality
+        toggleButton.addEventListener('mousedown', function(e) {
+            if (e.button === 0) { // Left mouse button only
+                isDragging = true;
+                offsetX = e.clientX - container.offsetLeft;
+                offsetY = e.clientY - container.offsetTop;
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                container.style.left = (e.clientX - offsetX) + 'px';
+                container.style.top = (e.clientY - offsetY) + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+        });
+    </script>
+</body>
+</html>
